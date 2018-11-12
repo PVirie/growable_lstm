@@ -22,7 +22,6 @@ class Classification_Gradient_Boost:
 
         self.training_ops = []
 
-        residues = one_hot_targets
         batches = tf.shape(self.inputs)[0]
         for i in range(boost_steps):
             RNN.grow()
@@ -34,16 +33,17 @@ class Classification_Gradient_Boost:
             weighted_outputs = tf.reduce_sum(tf.reshape(all_gammas[0:age], [1, age, 1]) * outputs, axis=1)
             weighted_outputs = tf.reshape(weighted_outputs, [batches, total_classes])
 
-            cost = tf.losses.softmax_cross_entropy(residues, weighted_outputs)
+            cost = tf.losses.softmax_cross_entropy(one_hot_targets, weighted_outputs)
             training_op_model = (tf.train.AdamOptimizer(0.001).minimize(cost, var_list=cell.get_variable_scope()), cost)
 
             current_gamma = self.gammas[i]
             training_op_weight = (tf.train.AdamOptimizer(0.0001).minimize(cost, var_list=[current_gamma]), cost)
 
             prediction = tf.nn.softmax(weighted_outputs, axis=-1)
-            residues = one_hot_targets - prediction
             self.training_ops.append((training_op_model, training_op_weight))
-        self.prediction = prediction
+
+        self.confidence = prediction
+        self.prediction = tf.argmax(prediction, axis=-1)
 
     def train(self, data, target, sess=None):
         print("train")
@@ -58,14 +58,15 @@ class Classification_Gradient_Boost:
 
     def predict(self, data, sess=None):
         print("predict")
-        p = sess.run(self.prediction, feed_dict={self.inputs: data})
-        print(p)
+        p, c = sess.run((self.prediction, self.confidence), feed_dict={self.inputs: data})
+
+        return p, c
 
 
 if __name__ == "__main__":
     with tf.Session() as sess:
         rnn = Cells.Aggregated_Cell([2, 5])
-        booster = Classification_Gradient_Boost(rnn, 7)
+        booster = Classification_Gradient_Boost(rnn, 8)
 
         sess.run(tf.global_variables_initializer())
 
@@ -73,5 +74,6 @@ if __name__ == "__main__":
         outputs = np.random.randint(0, 5, [20])
 
         booster.train(inputs, outputs, sess)
-        booster.predict(inputs, sess)
+        p, c = booster.predict(inputs, sess)
         print(outputs)
+        print(p)
