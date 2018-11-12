@@ -17,29 +17,35 @@ class Classification_Gradient_Boost:
 
         self.gammas = []
         for i in range(boost_steps):
-            self.gammas.append(tf.Variable(np.ones([1]), dtype=tf.float32))
+            self.gammas.append(tf.Variable(np.ones([1]) * 0.01, dtype=tf.float32))
         all_gammas = tf.stack(self.gammas, axis=0)
 
         self.training_ops = []
-
+        residues = one_hot_targets
         batches = tf.shape(self.inputs)[0]
         for i in range(boost_steps):
             RNN.grow()
             cell = RNN.get_last_cell()
-            outputs, _ = tf.nn.dynamic_rnn(RNN, self.inputs, initial_state=RNN.init_state(batches), time_major=False)
-            outputs = outputs[:, -1, :, :]
 
+            outputs, _ = tf.nn.dynamic_rnn(RNN, self.inputs, initial_state=RNN.init_state(batches), time_major=False)
+            h = outputs[:, -1, i, :]
+            # use square difference as the loss for gradient matching.
+            # why don't use the true loss and optimize match to the target class instead?
+            cost = tf.losses.mean_squared_error(residues, h)
+            training_op_model = (tf.train.AdamOptimizer(0.001).minimize(cost, var_list=cell.get_variable_scope()), cost)
+
+            outputs = outputs[:, -1, :, :]
             age = i + 1
             weighted_outputs = tf.reduce_sum(tf.reshape(all_gammas[0:age], [1, age, 1]) * outputs, axis=1)
             weighted_outputs = tf.reshape(weighted_outputs, [batches, total_classes])
 
+            # true loss, for optimizing learning rate
             cost = tf.losses.softmax_cross_entropy(one_hot_targets, weighted_outputs)
-            training_op_model = (tf.train.AdamOptimizer(0.001).minimize(cost, var_list=cell.get_variable_scope()), cost)
-
             current_gamma = self.gammas[i]
-            training_op_weight = (tf.train.AdamOptimizer(0.0001).minimize(cost, var_list=[current_gamma]), cost)
+            training_op_weight = (tf.train.AdamOptimizer(0.01).minimize(cost, var_list=[current_gamma]), cost)
 
             prediction = tf.nn.softmax(weighted_outputs, axis=-1)
+            residues = one_hot_targets - prediction
             self.training_ops.append((training_op_model, training_op_weight))
 
         self.confidence = prediction
