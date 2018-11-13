@@ -14,4 +14,4 @@ Here comes the thesis: can I merge the benefits of these two algorithms together
 
 ## License
 
-MIT free of use. 
+MIT free to use. 
