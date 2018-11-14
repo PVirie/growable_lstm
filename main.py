@@ -20,7 +20,7 @@ print(x_train.shape, x_test.shape)
 
 def init():
     rnn = Cells.Aggregated_Cell([28, 10])
-    booster = Boost.Classification_Gradient_Boost(rnn, 10, init_rate=0.01, rate_multiplier=1.0, gradient_learning_rate=0.0001, lambda_learning_rate=0.001)
+    booster = Boost.Classification_Gradient_Boost(rnn, 10, init_rate=0.01, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.01)
 
     # Smith, S. L., Kindermans, P. J., Ying, C., & Le, Q. V. (2017). Don't decay the learning rate, increase the batch size. arXiv preprint arXiv:1711.00489.
     dataset_prebatch = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(1024 * 16)
@@ -60,8 +60,8 @@ def train(model, sess=None):
 
     total_boost = len(training_ops)
     for i in range(total_boost):
-        train_init_op = train_init_ops[int(i * len(train_init_ops) / total_boost)]
-        for j in range(100):
+        for j in range(20):
+            train_init_op = train_init_ops[int(j * len(train_init_ops) / 20)]
             sess.run(train_init_op)
             while True:
                 try:
@@ -69,7 +69,8 @@ def train(model, sess=None):
                 except tf.errors.OutOfRangeError:
                     print(i, j, c)
                     break
-        for j in range(100):
+        for j in range(20):
+            train_init_op = train_init_ops[int(j * len(train_init_ops) / 20)]
             sess.run(train_init_op)
             while True:
                 try:
