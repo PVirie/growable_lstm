@@ -61,7 +61,7 @@ class Classification_Gradient_Boost:
 
 
 def init():
-    rnn = Cells.Aggregated_Cell([2, 5])
+    rnn = Cells.Aggregated_Cell(2, 2, 5)
     booster = Classification_Gradient_Boost(rnn, 8)
     inputs = tf.placeholder(shape=[None, None, rnn.get_depth()], dtype=tf.float32)
     targets = tf.placeholder(shape=[None], dtype=tf.int32)

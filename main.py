@@ -19,8 +19,8 @@ print(x_train.shape, x_test.shape)
 
 
 def init():
-    rnn = Cells.Aggregated_Cell([28, 10])
-    booster = Boost.Classification_Gradient_Boost(rnn, 10, init_rate=0.01, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.01)
+    rnn = Cells.Aggregated_Cell(28, 2, 15)
+    booster = Boost.Classification_Gradient_Boost(rnn, 10, init_rate=1.0, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.01)
 
     # Smith, S. L., Kindermans, P. J., Ying, C., & Le, Q. V. (2017). Don't decay the learning rate, increase the batch size. arXiv preprint arXiv:1711.00489.
     dataset_prebatch = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(1024 * 16)
