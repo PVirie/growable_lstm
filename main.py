@@ -10,17 +10,23 @@ mnist = tf.keras.datasets.fashion_mnist
 # mnist.load_data(os.path.join(root, "artifacts", "fashion_mnist.npz"))
 (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
 
-
 x_train = train_images.reshape(-1, 28, 28).astype(np.float32) / 255.0
 x_test = test_images.reshape(-1, 28, 28).astype(np.float32) / 255.0
+# normalize data
+mean = np.mean(x_train, axis=0, keepdims=True)
+std = np.std(x_train, axis=0, keepdims=True)
+x_train = (x_train - mean) / std
+x_test = (x_test - mean) / std
+
+
 y_train = train_labels
 y_test = test_labels
 print(x_train.shape, x_test.shape)
 
 
 def init():
-    rnn = Cells.Aggregated_Cell(28, 2, 15)
-    booster = Boost.Classification_Gradient_Boost(rnn, 10, init_rate=1.0, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.01)
+    rnn = Cells.Aggregated_Cell(28, 3, 10)
+    booster = Boost.Classification_Gradient_Boost(rnn, 10, init_rate=1.0, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.001)
 
     # Smith, S. L., Kindermans, P. J., Ying, C., & Le, Q. V. (2017). Don't decay the learning rate, increase the batch size. arXiv preprint arXiv:1711.00489.
     dataset_prebatch = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(1024 * 16)
@@ -63,20 +69,28 @@ def train(model, sess=None):
         for j in range(20):
             train_init_op = train_init_ops[int(j * len(train_init_ops) / 20)]
             sess.run(train_init_op)
+            cs = 0
+            t = 0
             while True:
                 try:
                     _, c = sess.run(training_ops[i][0])
+                    cs = cs + c
+                    t = t + 1
                 except tf.errors.OutOfRangeError:
-                    print(i, j, c)
+                    print(i, j, cs / t)
                     break
         for j in range(20):
             train_init_op = train_init_ops[int(j * len(train_init_ops) / 20)]
             sess.run(train_init_op)
+            cs = 0
+            t = 0
             while True:
                 try:
                     _, c = sess.run(training_ops[i][1])
+                    cs = cs + c
+                    t = t + 1
                 except tf.errors.OutOfRangeError:
-                    print(i, j, c)
+                    print(i, j, cs / t)
                     break
         saver.save(sess, os.path.join(root, "weight_sets", "model.ckpt"))
 

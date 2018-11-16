@@ -6,7 +6,7 @@ import numpy as np
 # the loss function is the cross-entropy
 class Classification_Gradient_Boost:
 
-    def __init__(self, RNN, boost_steps, init_rate=0.01, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.01):
+    def __init__(self, RNN, boost_steps, init_rate=1.0, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.001):
         print("init")
 
         self.total_classes = RNN.get_num_outputs()
