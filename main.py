@@ -25,8 +25,8 @@ print(x_train.shape, x_test.shape)
 
 
 def init():
-    rnn = Cells.Aggregated_Cell(28, 3, 10)
-    booster = Boost.Classification_Gradient_Boost(rnn, 10, init_rate=1.0, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.001)
+    rnn = Cells.Aggregated_Cell(28, 5, 10)
+    booster = Boost.Classification_Gradient_Boost(rnn, 50, init_rate=0.01, rate_multiplier=1.0, gradient_learning_rate=0.001, lambda_learning_rate=0.001)
 
     # Smith, S. L., Kindermans, P. J., Ying, C., & Le, Q. V. (2017). Don't decay the learning rate, increase the batch size. arXiv preprint arXiv:1711.00489.
     dataset_prebatch = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(1024 * 16)
@@ -60,8 +60,10 @@ def init():
 def train(model, sess=None):
     print("train")
 
+    accuracy_op = model[0]
     training_ops = model[1]
     train_init_ops = model[2]
+    test_init_op = model[3]
     saver = model[4]
 
     total_boost = len(training_ops)
@@ -92,7 +94,20 @@ def train(model, sess=None):
                 except tf.errors.OutOfRangeError:
                     print(i, j, cs / t)
                     break
+
         saver.save(sess, os.path.join(root, "weight_sets", "model.ckpt"))
+
+        accuracy = 0
+        count = 0
+        sess.run(test_init_op)
+        while True:
+            try:
+                acc = sess.run(accuracy_op)
+                accuracy = accuracy + acc
+                count = count + 1
+            except tf.errors.OutOfRangeError:
+                print(i, "Accuracy:", accuracy / count)
+                break
 
 
 def test(model, sess=None):
